@@ -43,16 +43,10 @@ class ViewController: UIViewController, WKUIDelegate, WKScriptMessageHandler {
         let userContentController = WKUserContentController()
         userContentController.add(self, name: "unityControl")
 
-        WKContentRuleListStore.default().compileContentRuleList(
-            forIdentifier: "ContentBlockingRules",
-            encodedContentRuleList: "[{\"trigger\":{\"url-filter\":\".*\"},\"action\":{\"type\":\"make-https\"}}]")
-        { contentRuleList, error in
-            if let error = error {
-                debugPrint(error)
-                return
-            }
-            webConfiguration.userContentController.add(contentRuleList!)
-        }
+        // Use private API - this works
+        let processPool = WKProcessPool.perform(NSSelectorFromString("_sharedProcessPool"))?.takeRetainedValue() as! WKProcessPool
+        processPool.perform(NSSelectorFromString("_registerURLSchemeAsSecure:"), with:"o3h")
+
         webView = WKWebView(frame: .zero, configuration: webConfiguration)
         webView.uiDelegate = self
         webView.navigationDelegate = self
@@ -62,19 +56,30 @@ class ViewController: UIViewController, WKUIDelegate, WKScriptMessageHandler {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // WORKS: Access o3h: from HTML loaded via file:///
-//        let url = Bundle.main.url(forResource: "index", withExtension: "html")!
-//        webView.loadFileURL(url, allowingReadAccessTo: url)
+        WKContentRuleListStore.default().compileContentRuleList(
+            forIdentifier: "ContentBlockingRules",
+            encodedContentRuleList: "[{\"trigger\":{\"url-filter\":\".*\"},\"action\":{\"type\":\"make-https\"}}]")
+        { contentRuleList, error in
+            if let error = error {
+                debugPrint(error)
+                return
+            }
+            self.webView.configuration.userContentController.add(contentRuleList!)
 
-        // WORKS: Access o3h: from HTML loaded via http://
-//        let url = URL(string: "http://oooh-tv.s3.us-east-2.amazonaws.com/modules/__temp/index.html")!
-//        let request = URLRequest(url: url)
-//        webView.load(request)
+            // WORKS: Access o3h: from HTML loaded via file:
+            //        let url = Bundle.main.url(forResource: "index", withExtension: "html")!
+            //        webView.loadFileURL(url, allowingReadAccessTo: url)
 
-        // DOES NOT WORK: Access o3h: from HTML loaded via https://
-        let url = URL(string: "https://oooh-tv.s3.us-east-2.amazonaws.com/modules/__temp/index.html")!
-        let request = URLRequest(url: url)
-        webView.load(request)
+//            // WORKS: Access o3h: from HTML loaded via http:
+//            let url = URL(string: "http://oooh-tv.s3.us-east-2.amazonaws.com/modules/__temp/index.html")!
+//            let request = URLRequest(url: url)
+//            self.webView.load(request)
+
+            // DOES NOT WORK: Access o3h: from HTML loaded via https:
+            let url = URL(string: "https://oooh-tv.s3.us-east-2.amazonaws.com/modules/__temp/index.html")!
+            let request = URLRequest(url: url)
+            self.webView.load(request)
+        }
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
