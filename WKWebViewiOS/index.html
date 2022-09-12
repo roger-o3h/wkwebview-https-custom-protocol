@@ -1,0 +1,37 @@
+<html>
+<head>
+<title>Test</title>
+<style>
+    body {
+        font-size: 4vw;
+    }
+</style>
+</head>
+<body>
+
+<h2>Test Custom Scheme</h2>
+<a href="#" id="test">Test Me</a>
+<div id="result"></div>
+<pre id="console"></pre>
+<script type="text/javascript">
+document.getElementById('test').addEventListener('click', function (event) {
+	event.preventDefault();
+	document.getElementById("result").innerHTML = '<p>You clicked!</p>';
+	var xhr = new XMLHttpRequest();
+    xhr.responseType = "text";
+	var url = "o3h://resource1";
+	xhr.open('GET', url);
+	xhr.onreadystatechange = function() {
+        document.getElementById("result").innerHTML += '<p>readyState &rarr; ' + this.readyState;
+        if (this.readyState == 4 && this.status == 200) {
+            document.getElementById("result").innerHTML += '<h2>Success</h2><p>' + xhr.response;
+        }
+	};
+    xhr.onerror = function(err) {
+        document.getElementById("result").innerHTML += '<h2>ERROR</h2><p>' + err.toString();
+    };
+    xhr.send();
+});
+</script>
+</body>
+</html>
